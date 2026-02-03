@@ -1,0 +1,39 @@
+import pandas as pd # Import the pandas library for data manipulation
+
+# Load the daily air quality dataset from a CSV file
+air_data = pd.read_csv('AirQuality_Daily_StudentVersion.csv')
+
+# Ensure the data is stored in a DataFrame structure for manipulation
+air_data = pd.DataFrame(air_data)
+
+# Group the data by 'sensor.name' and count the number of observations for each sensor
+# .size() provides the count of rows per group
+grouped_data = air_data.groupby(['sensor.name']).size()
+
+# Convert the grouped series back into a clean DataFrame with a named column for counts
+# .reset_index(name='n') turns the index back into a column and names the count 'n'
+summary_df = air_data.groupby(['sensor.name']).size().reset_index(name='n')
+
+# Use .agg() to calculate multiple summary statistics (max, min, mean, median) at once
+stat_summary = air_data.groupby('sensor.name')['pm2.5_atm'].agg(['max', 'min', 'mean', 'median'])
+
+# Define a custom function to categorize numerical temperature data
+def assign_temperature(X):
+    if X < 32:
+        return 'Below Freezing'
+    elif 32 <= X <= 50:
+        return 'Cool'
+    elif 51 < X <= 70:
+        return 'Warm'
+    else:
+        return 'Hot'
+
+# Create a new column 'temperature_level' by applying the function to the existing 'temperature' column
+# This transforms numerical values into categorical labels for easier analysis
+air_data['temperature_level'] = air_data['temperature'].apply(assign_temperature)
+
+# Example of filtering and grouping: find the top 3 highest median VOC levels at different altitudes 
+# specifically for "Warm" air days
+warm_air = air_data[air_data['temperature_level'] == "Warm"].groupby('sensor.altitude')
+median_warm_air = warm_air.agg(median = ('voc','median'))
+top_3_voc = median_warm_air.sort_values(by = 'median', ascending = False).head(3)
